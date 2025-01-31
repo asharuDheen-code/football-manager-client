@@ -1,0 +1,54 @@
+/* Team View Styles */
+.team-view {
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .team-view h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  
+  .team-budget {
+    text-align: center;
+    font-size: 1.2em;
+    margin-bottom: 20px;
+    color: #28a745;
+  }
+  
+  .players-list {
+    margin-top: 20px;
+  }
+  
+  .players-list h3 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  
+  .players-list table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .players-list th,
+  .players-list td {
+    padding: 10px;
+    border: 1px solid #ccc;
+    text-align: center;
+  }
+  
+  .players-list th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+  }
+  
+  .players-list tr:hover {
+    background-color: #f9f9f9;
+  }
