@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import "./TransferMarket.css";
 import api from "../../services/api";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 
 const TransferMarket = () => {
   const [players, setPlayers] = useState([]);
@@ -12,6 +14,21 @@ const TransferMarket = () => {
     minPrice: 0,
     maxPrice: 1000000,
   });
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+
+  const MIN_ASKING_PRICE = 100000;
+
+  const openSnackbar = (message, severity = "success") => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  };
+
+  const closeSnackbar = () => {
+    setSnackbarOpen(false);
+  };
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -21,6 +38,7 @@ const TransferMarket = () => {
         setMyTeamPlayers(response.data.myTeamPlayers);
       } catch (err) {
         console.error("Error fetching players:", err);
+        openSnackbar("Failed to fetch players", "error");
       }
     };
 
@@ -34,6 +52,7 @@ const TransferMarket = () => {
         setAvailablePlayers(response.data.transfers);
       } catch (err) {
         console.error("Error fetching transfer list:", err);
+        openSnackbar("Failed to fetch transfer list", "error");
       }
     };
 
@@ -64,24 +83,43 @@ const TransferMarket = () => {
     isOnTransferList,
     askingPrice
   ) => {
+    if (askingPrice < MIN_ASKING_PRICE) {
+      openSnackbar(
+        `Asking price must be at least ₹${MIN_ASKING_PRICE.toLocaleString()}`,
+        "error"
+      );
+      return;
+    }
+
     try {
-      const response = await api.post("/transfer/toggle", {
+      const { data } = await api.post("/transfer/toggle", {
         playerId,
         isOnTransferList: !isOnTransferList,
         askingPrice,
       });
 
-      setMyTeamPlayers(response.data.players);
+      setMyTeamPlayers(data.players);
 
-      const transferListResponse = await api.get("/transfer/transfer-list");
-      setAvailablePlayers(transferListResponse.data.transfers);
+      // Reset asking price for all players in the team to 0 after the transfer list update
+      const updatedPlayers = data.players.map((player) => ({
+        ...player,
+        askingPrice: 0, // Reset asking price for all players
+      }));
+      setMyTeamPlayers(updatedPlayers);
 
-      alert(
+      const { data: transferListData } = await api.get(
+        "/transfer/transfer-list"
+      );
+      setAvailablePlayers(transferListData.transfers);
+
+      openSnackbar(
         `Player ${isOnTransferList ? "removed from" : "added to"} transfer list`
       );
     } catch (err) {
       console.error("Error toggling transfer list:", err);
-      alert("Failed to update transfer list");
+      const message =
+        err.response?.data.message || "Failed to update transfer list";
+      openSnackbar(message, "error");
     }
   };
 
@@ -95,13 +133,23 @@ const TransferMarket = () => {
       setPlayers(response.data.players);
       setMyTeamPlayers(response.data.myTeamPlayers);
 
+      // Reset asking price for all players in the team to 0 after a successful buy
+      const updatedPlayers = response.data.myTeamPlayers.map((player) => ({
+        ...player,
+        askingPrice: 0, // Reset asking price for all players
+      }));
+      setMyTeamPlayers(updatedPlayers);
+
       const transferListResponse = await api.get("/transfer/transfer-list");
       setAvailablePlayers(transferListResponse.data.transfers);
 
-      alert("Player bought successfully!");
+      openSnackbar("Player bought successfully!");
     } catch (err) {
       console.error("Error buying player:", err);
-      alert("Failed to buy player. Check your budget or team size.");
+      openSnackbar(
+        "Failed to buy player. Check your budget or team size.",
+        "error"
+      );
     }
   };
 
@@ -109,7 +157,6 @@ const TransferMarket = () => {
     <div className="transfer-market">
       <h2>Transfer Market</h2>
 
-      {/* Filters Section */}
       <div className="filters">
         <input
           type="text"
@@ -145,7 +192,6 @@ const TransferMarket = () => {
         />
       </div>
 
-      {/* Available Players Section */}
       <div className="section">
         <h3>Available Players</h3>
         <div className="scrollable-table">
@@ -182,7 +228,6 @@ const TransferMarket = () => {
         </div>
       </div>
 
-      {/* My Team Players Section */}
       <div className="section">
         <h3>My Team Players</h3>
         <div className="scrollable-table">
@@ -242,6 +287,21 @@ const TransferMarket = () => {
           </table>
         </div>
       </div>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={closeSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={closeSnackbar}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </div>
   );
 };
